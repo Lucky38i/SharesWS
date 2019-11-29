@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>ntu.n0696066</groupId>
-  <artifactId>Shares WS Core</artifactId>
+  <artifactId>Shares_WS</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>war</packaging>
 
@@ -28,9 +28,10 @@
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
+      <artifactId>jackson-databind</artifactId>
       <version>2.10.1</version>
     </dependency>
+
   </dependencies>
 
   <build>
