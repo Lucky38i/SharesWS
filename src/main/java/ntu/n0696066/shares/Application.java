@@ -23,6 +23,7 @@ public class Application {
     public static String apiKey;
     public static void main(String[] args) throws IOException{
 
+        // Pull in properties from property file
         try(InputStream in = new FileInputStream("src/main/resources/application.properties")){
             Properties prop = new Properties();
             prop.load(in);
