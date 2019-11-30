@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Properties;
 
 /*
@@ -30,7 +31,10 @@ public class Application {
 
             apiKey = prop.getProperty("alphavantage.apikey");
         }
-        SpringApplication.run(Application.class,args);
+        if (!apiKey.isEmpty()) SpringApplication.run(Application.class,args);
+        else {
+            System.out.println("API Key missing");
+        }
 
     }
 }
