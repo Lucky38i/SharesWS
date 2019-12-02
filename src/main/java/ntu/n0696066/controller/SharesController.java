@@ -1,8 +1,10 @@
-package ntu.n0696066.shares;
+package ntu.n0696066.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.util.converter.BigDecimalStringConverter;
+import ntu.n0696066.Application;
+import ntu.n0696066.shares.CurrentShares;
 import org.springframework.web.bind.annotation.*;
 
 import javax.xml.bind.JAXBContext;
@@ -40,7 +42,7 @@ public class SharesController {
         try {
             JAXBContext context = JAXBContext.newInstance(CurrentShares.class);
             Marshaller m = context.createMarshaller();
-            m.marshal(newPurchase, new File("/" + newPurchase.getCompanySymbol() + ".xml"));
+            m.marshal(newPurchase, new File(  newPurchase.getCompanySymbol() + ".xml"));
         }catch (JAXBException e) {
             e.printStackTrace();
         }
@@ -58,11 +60,11 @@ public class SharesController {
 
         if (shareXml.isFile()) {
             try {
-                CurrentShares tempShare = retrieveStock(shareToUpdate.companySymbol);
+                CurrentShares tempShare = retrieveStock(shareToUpdate.getCompanySymbol());
                 JAXBContext context = JAXBContext.newInstance(CurrentShares.class);
                 Marshaller m = context.createMarshaller();
 
-                tempShare.setSharesAmount(tempShare.getSharesAmount().add(shareToUpdate.sharesAmount));
+                tempShare.setSharesAmount(tempShare.getSharesAmount().add(shareToUpdate.getSharesAmount()));
                 m.marshal(tempShare, shareXml);
             }catch(JAXBException e){
                 e.printStackTrace();
@@ -80,12 +82,12 @@ public class SharesController {
     public String sellShares(@RequestBody CurrentShares sharesToSell) {
         File shareXml = new File("/" + sharesToSell.getCompanySymbol() + ".xml");
         try {
-            CurrentShares tempShare = retrieveStock(sharesToSell.companySymbol);
+            CurrentShares tempShare = retrieveStock(sharesToSell.getCompanySymbol());
 
             JAXBContext context = JAXBContext.newInstance(CurrentShares.class);
             Marshaller m = context.createMarshaller();
 
-            tempShare.setSharesAmount(tempShare.getSharesAmount().subtract(sharesToSell.sharesAmount));
+            tempShare.setSharesAmount(tempShare.getSharesAmount().subtract(sharesToSell.getSharesAmount()));
 
             m.marshal(tempShare, shareXml);
         } catch(JAXBException e) {
@@ -103,7 +105,7 @@ public class SharesController {
     public JsonNode listStock(@RequestParam(value="sharesymbol") String shareSymbol){
         JsonNode foundShare = null;
         try {
-            Object[] apiObjects = {shareSymbol,Application.apiKey};
+            Object[] apiObjects = {shareSymbol, Application.apiKey};
             ObjectMapper mapper = new ObjectMapper();
 
             JsonNode searchResults = mapper.readValue(new URL(symbolSearch.format(apiObjects)), JsonNode.class);
