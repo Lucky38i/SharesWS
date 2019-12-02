@@ -40,7 +40,8 @@ public class SharesController {
      */
     @PostMapping("/purchasestock")
     @ResponseStatus(HttpStatus.CREATED)
-    public @ResponseBody String purchaseShare(@RequestBody CurrentShares newPurchase) {
+    public @ResponseBody
+    String purchaseShare(@RequestBody CurrentShares newPurchase) {
         try {
             JAXBContext context = JAXBContext.newInstance(CurrentShares.class);
             Marshaller m = context.createMarshaller();
