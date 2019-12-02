@@ -6,6 +6,7 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="SharesWS" />
         <module name="Shares WS Core" />
       </profile>
     </annotationProcessing>
@@ -13,6 +14,7 @@
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="Shares WS Core" options="-parameters" />
+      <module name="SharesWS" options="-parameters" />
     </option>
   </component>
 </project>

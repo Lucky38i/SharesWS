@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.util.converter.BigDecimalStringConverter;
 import ntu.n0696066.Application;
 import ntu.n0696066.shares.CurrentShares;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.xml.bind.JAXBContext;
@@ -38,6 +39,7 @@ public class SharesController {
      * @return Returns status
      */
     @PostMapping("/purchasestock")
+    @ResponseStatus(HttpStatus.CREATED)
     public @ResponseBody String purchaseShare(@RequestBody CurrentShares newPurchase) {
         try {
             JAXBContext context = JAXBContext.newInstance(CurrentShares.class);

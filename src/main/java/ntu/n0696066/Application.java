@@ -1,5 +1,7 @@
 package ntu.n0696066;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -22,6 +24,7 @@ import java.util.Properties;
 public class Application {
     public static String apiKey;
     public static void main(String[] args) throws IOException{
+        final Logger log = LoggerFactory.getLogger(Application.class);
 
         // Pull in properties from property file
         try(InputStream in = new FileInputStream("src/main/resources/application.properties")){
@@ -32,7 +35,7 @@ public class Application {
         }
         if (!apiKey.isEmpty()) SpringApplication.run(Application.class,args);
         else {
-            System.out.println("API Key missing");
+            log.error("API Key missing");
         }
 
     }
