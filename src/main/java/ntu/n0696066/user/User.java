@@ -1,43 +1,47 @@
 package ntu.n0696066.user;
 
+import ntu.n0696066.shares.Shares;
+
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@NamedQuery(query= "select u from User u", name = "query_find_all_users")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-
-    private String name;
-
-    private String role;
-
-    protected User() {}
-
-    public User(String name) {
-        super();
-        this.name = name;
-    }
+    private String userName;
+    private String password;
+    @OneToMany(mappedBy = "user")
+    private final List<Shares> ownedShares = new ArrayList<Shares>();
 
     public Long getId() {
         return id;
     }
 
-    public String getName() {
-        return name;
+    public void setId(long id) {
+        this.id = id;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public String getUserName() {
+        return userName;
     }
 
-    public String getRole() {
-        return role;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
-    public void setRole(String role) {
-        this.role = role;
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String role) {
+        this.password = role;
+    }
+
+    public List<Shares> getOwnedShares() {
+        return ownedShares;
     }
 }
