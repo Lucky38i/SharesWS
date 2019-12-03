@@ -1,27 +1,28 @@
-package ntu.n0696066.shares;
-
-import ntu.n0696066.user.User;
+package ntu.n0696066.model;
 
 import javax.persistence.*;
 
 @Entity
+@NamedQuery(name ="findShareBySymbolAndUser", query = "FROM Shares WHERE companySymbol = ?1 AND user = ?2")
 public class Shares {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private long id;
+    private long shares_id;
     private String companyName;
     private String companySymbol;
     private long sharesAmount;
+    @ManyToOne
     private User user;
+    @OneToOne
     private SharePrice sharePrice;
 
-    public long getId() {
-        return id;
+    public long getShares_id() {
+        return shares_id;
     }
 
-    public void setId(long id) {
-        this.id = id;
+    public void setShares_id(long id) {
+        this.shares_id = id;
     }
 
     public String getCompanyName() {
@@ -48,7 +49,6 @@ public class Shares {
         this.sharesAmount = sharesAmount;
     }
 
-    @ManyToOne
     public User getUser() {
         return user;
     }
@@ -57,7 +57,6 @@ public class Shares {
         this.user = user;
     }
 
-    @OneToOne
     public SharePrice getSharePrice() {
         return sharePrice;
     }

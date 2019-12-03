@@ -1,4 +1,4 @@
-package ntu.n0696066.shares;
+package ntu.n0696066.model;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -8,17 +8,17 @@ public class SharePrice {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private long id;
+    private long sharePrice_id;
     private String currency;
     private float value;
     private LocalDateTime lastUpdate;
 
-    public long getId() {
-        return id;
+    public long getSharePrice_id() {
+        return sharePrice_id;
     }
 
     public void setID(long id){
-        this.id = id;
+        this.sharePrice_id = id;
     }
 
     public String getCurrency() {

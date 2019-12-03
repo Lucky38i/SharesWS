@@ -1,6 +1,4 @@
-package ntu.n0696066.user;
-
-import ntu.n0696066.shares.Shares;
+package ntu.n0696066.model;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -11,26 +9,33 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-    private String userName;
+    private Long user_id;
+    private String username;
     private String password;
     @OneToMany(mappedBy = "user")
     private final List<Shares> ownedShares = new ArrayList<Shares>();
 
-    public Long getId() {
-        return id;
+    public User() {};
+
+    public User(String username, String password) {
+        this.username = username;
+        this.password = password;
     }
 
-    public void setId(long id) {
-        this.id = id;
+    public Long getUser_id() {
+        return user_id;
     }
 
-    public String getUserName() {
-        return userName;
+    public void setUser_id(long id) {
+        this.user_id = id;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String userName) {
+        this.username = userName;
     }
 
     public String getPassword() {
