@@ -19,6 +19,7 @@ public class UserController {
         return "Success";
     }
 
+
     @RequestMapping("/register")
     public String registerTemp(@RequestParam String username) {
         String returnVal = "";

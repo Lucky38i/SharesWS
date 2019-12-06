@@ -2,18 +2,23 @@ package ntu.n0696066.model;
 
 import javax.persistence.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long user_id;
+    @Column(name = "user_id")
+    private Long id;
+
+    @OneToMany(mappedBy = "user")
+    private final Set<Shares> ownedShares = new HashSet<>();
+
     private String username;
     private String password;
-    @OneToMany(mappedBy = "user")
-    private final List<Shares> ownedShares = new ArrayList<Shares>();
 
     public User() {};
 
@@ -22,12 +27,12 @@ public class User {
         this.password = password;
     }
 
-    public Long getUser_id() {
-        return user_id;
+    public Long getId() {
+        return id;
     }
 
-    public void setUser_id(long id) {
-        this.user_id = id;
+    public void setId(long id) {
+        this.id = id;
     }
 
     public String getUsername() {
@@ -46,7 +51,7 @@ public class User {
         this.password = role;
     }
 
-    public List<Shares> getOwnedShares() {
+    public Set<Shares> getOwnedShares() {
         return ownedShares;
     }
 }

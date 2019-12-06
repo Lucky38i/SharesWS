@@ -2,27 +2,19 @@ package ntu.n0696066.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import javafx.util.converter.BigDecimalStringConverter;
 import ntu.n0696066.Application;
-import ntu.n0696066.shares.CurrentShares;
+import ntu.n0696066.dao.SharesRepository;
+import ntu.n0696066.model.SharePrice;
+import ntu.n0696066.model.Shares;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
-import javax.xml.datatype.XMLGregorianCalendar;
-import java.io.File;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.GregorianCalendar;
 
 @RestController
 public class SharesController {
@@ -32,70 +24,29 @@ public class SharesController {
     MessageFormat symbolSearch = new MessageFormat(
             "https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=\"{0}\"&apikey=\"{1}\"");
 
+    SharesRepository shareRepo;
+
 
     /**
      * Purchase shares in a new stock
-     * @param newPurchase The share object used to make a new stock purchase
+     * @param shares the stock to purchase
      * @return Returns status
      */
     @PostMapping("/purchasestock")
     @ResponseStatus(HttpStatus.CREATED)
-    public @ResponseBody
-    String purchaseShare(@RequestBody CurrentShares newPurchase) {
-        try {
-            JAXBContext context = JAXBContext.newInstance(CurrentShares.class);
-            Marshaller m = context.createMarshaller();
-            m.marshal(newPurchase, new File(  newPurchase.getCompanySymbol() + ".xml"));
-        }catch (JAXBException e) {
-            e.printStackTrace();
-        }
+    public String purchaseShare(@RequestBody Shares shares) {
+        shareRepo.save(shares);
         return "Success";
     }
 
     /**
-     * Purchase more shares for an existing held share
+     * Updatess the share object when a client decides to sell or purchase more shares
      * @param shareToUpdate CurrentShares object containing current shares to be added to current stock
      * @return Returns status
      */
-    @PutMapping("/purchaseshares")
-    public String updateShares(@RequestBody CurrentShares shareToUpdate){
-        File shareXml = new File("/" + shareToUpdate.getCompanySymbol() + "xml");
-
-        if (shareXml.isFile()) {
-            try {
-                CurrentShares tempShare = retrieveStock(shareToUpdate.getCompanySymbol());
-                JAXBContext context = JAXBContext.newInstance(CurrentShares.class);
-                Marshaller m = context.createMarshaller();
-
-                tempShare.setSharesAmount(tempShare.getSharesAmount().add(shareToUpdate.getSharesAmount()));
-                m.marshal(tempShare, shareXml);
-            }catch(JAXBException e){
-                e.printStackTrace();
-            }
-        }
-        return "Success";
-    }
-
-    /**
-     * Sell Shares from a currently held stock
-     * @param sharesToSell CurrentShares Object containing the subtracting amount from the currently held stock
-     * @return Returns status
-     */
-    @PutMapping("/sellshares")
-    public String sellShares(@RequestBody CurrentShares sharesToSell) {
-        File shareXml = new File("/" + sharesToSell.getCompanySymbol() + ".xml");
-        try {
-            CurrentShares tempShare = retrieveStock(sharesToSell.getCompanySymbol());
-
-            JAXBContext context = JAXBContext.newInstance(CurrentShares.class);
-            Marshaller m = context.createMarshaller();
-
-            tempShare.setSharesAmount(tempShare.getSharesAmount().subtract(sharesToSell.getSharesAmount()));
-
-            m.marshal(tempShare, shareXml);
-        } catch(JAXBException e) {
-            e.printStackTrace();
-        }
+    @PutMapping("/updateshares")
+    public String updateShares(@RequestBody Shares shareToUpdate){
+        shareRepo.save(shareToUpdate);
         return "Success";
     }
 
@@ -125,42 +76,32 @@ public class SharesController {
      * @return Returns either an existing held stock or build a new one
      */
     @RequestMapping("retrievestock")
-    public CurrentShares retrieveStock(@RequestParam(value="sharesymbol") String shareSymbol) {
-        CurrentShares tempShare = new CurrentShares();
-        File fileXml = new File("/" + shareSymbol + ".xml");
+    public Shares retrieveStock(@RequestParam String shareSymbol) {
+        Shares tempShare = new Shares();
         try {
-            if (fileXml.isFile()){
-                JAXBContext context = JAXBContext.newInstance(CurrentShares.class);
-                Unmarshaller um = context.createUnmarshaller();
-                tempShare = (CurrentShares) um.unmarshal(fileXml);
-                // TODO Implement way to update shares price by day
-            }
-            else {
-                Object[] apiObjects = {shareSymbol, Application.apiKey};
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode quoteResults = mapper.readValue(new URL(globalQuote.format(apiObjects)),
-                        JsonNode.class);
-                JsonNode searchResults = mapper.readValue(new URL(symbolSearch.format(apiObjects)),
-                        JsonNode.class);
-                CurrentShares.SharePrice tempPrice = new CurrentShares.SharePrice();
-                LocalDate tempDate = LocalDate.parse(
-                        quoteResults.get("bestMatches").get(0).get("07. latest trading day").asText());
-                GregorianCalendar gCal = GregorianCalendar.from(tempDate.atStartOfDay(ZoneId.systemDefault()));
-                XMLGregorianCalendar calendarXml = DatatypeFactory.newInstance().newXMLGregorianCalendar(gCal);
+            Object[] apiObjects = {shareSymbol, Application.apiKey};
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode quoteResults = mapper.readValue(new URL(globalQuote.format(apiObjects)),
+                    JsonNode.class);
+            JsonNode searchResults = mapper.readValue(new URL(symbolSearch.format(apiObjects)),
+                    JsonNode.class);
+            SharePrice tempPrice = new SharePrice();
+            LocalDate tempDate = LocalDate.parse(
+                    quoteResults.get("Global Quote").get("07. latest trading day").asText());
 
-                tempPrice.setCurrency(searchResults.get("bestMatches").get(0).get("8. currency").textValue());
-                tempPrice.setValue(new BigDecimalStringConverter().fromString(
-                        quoteResults.get("Global Quote").get("05. price").textValue()));
-                tempPrice.setLastUpdate(calendarXml);
+            tempPrice.setCurrency(searchResults.get("bestMatches").get(0).get("8. currency").textValue());
+            tempPrice.setValue(Float.parseFloat(quoteResults.get("Global Quote").get("05. price").textValue()));
+            tempPrice.setLastUpdate(tempDate);
 
-                tempShare.setCompanyName(searchResults.get("bestMatches").get(0).get("2. name").textValue());
-                tempShare.setCompanySymbol(shareSymbol);
-                tempShare.setSharesAmount(BigInteger.valueOf(0));
-                tempShare.setSharePrice(tempPrice);
-            }
+            tempShare.setCompanyName(searchResults.get("bestMatches").get(0).get("2. name").textValue());
+            tempShare.setCompanySymbol(shareSymbol);
+            tempShare.setSharesAmount(0);
+            tempShare.setSharePrice(tempPrice);
 
-        } catch (IOException | JAXBException | DatatypeConfigurationException e) {
+        } catch (IOException e) {
             e.printStackTrace();
+            throw new ResponseStatusException(
+                    HttpStatus.REQUEST_TIMEOUT, "Server Unavailable", e);
         }
         return tempShare;
     }

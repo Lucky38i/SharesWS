@@ -3,26 +3,33 @@ package ntu.n0696066.model;
 import javax.persistence.*;
 
 @Entity
-@NamedQuery(name ="findShareBySymbolAndUser", query = "FROM Shares WHERE companySymbol = ?1 AND user = ?2")
 public class Shares {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private long shares_id;
+    @Column(name = "share_id")
+    private long id;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "shareprice_id", referencedColumnName = "id")
+    private SharePrice sharePrice;
+
     private String companyName;
     private String companySymbol;
     private long sharesAmount;
-    @ManyToOne
-    private User user;
-    @OneToOne
-    private SharePrice sharePrice;
+
+    public Shares(){};
 
     public long getShares_id() {
-        return shares_id;
+        return id;
     }
 
     public void setShares_id(long id) {
-        this.shares_id = id;
+        this.id = id;
     }
 
     public String getCompanyName() {
