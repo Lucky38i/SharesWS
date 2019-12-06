@@ -7,15 +7,16 @@ public class Shares {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "share_id")
+    @Column(name = "id")
     private long id;
 
+    // TODO make this print the user ID. when retrieving JSON
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "shareprice_id", referencedColumnName = "id")
+    @JoinColumn(name = "shareprice_id", unique = true, referencedColumnName = "id")
     private SharePrice sharePrice;
 
     private String companyName;

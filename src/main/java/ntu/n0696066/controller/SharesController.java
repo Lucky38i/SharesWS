@@ -6,6 +6,7 @@ import ntu.n0696066.Application;
 import ntu.n0696066.dao.SharesRepository;
 import ntu.n0696066.model.SharePrice;
 import ntu.n0696066.model.Shares;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,8 +25,8 @@ public class SharesController {
     MessageFormat symbolSearch = new MessageFormat(
             "https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=\"{0}\"&apikey=\"{1}\"");
 
+    @Autowired
     SharesRepository shareRepo;
-
 
     /**
      * Purchase shares in a new stock
@@ -73,7 +74,7 @@ public class SharesController {
     /**
      * Retrieves the specified stock item based on the given symbol
      * @param shareSymbol The symbol with which to retrieve the stock item
-     * @return Returns either an existing held stock or build a new one
+     * @return Returns new stock item
      */
     @RequestMapping("retrievestock")
     public Shares retrieveStock(@RequestParam String shareSymbol) {
@@ -97,7 +98,6 @@ public class SharesController {
             tempShare.setCompanySymbol(shareSymbol);
             tempShare.setSharesAmount(0);
             tempShare.setSharePrice(tempPrice);
-
         } catch (IOException e) {
             e.printStackTrace();
             throw new ResponseStatusException(
