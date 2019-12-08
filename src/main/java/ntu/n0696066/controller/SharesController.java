@@ -3,12 +3,11 @@ package ntu.n0696066.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ntu.n0696066.Application;
-import ntu.n0696066.dao.SharesRepository;
+import ntu.n0696066.repository.SharesRepository;
 import ntu.n0696066.model.SharePrice;
 import ntu.n0696066.model.Shares;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -18,6 +17,7 @@ import java.text.MessageFormat;
 import java.time.LocalDate;
 
 @RestController
+@RequestMapping("/api/shares")
 public class SharesController {
 
     MessageFormat globalQuote = new MessageFormat(
@@ -63,8 +63,7 @@ public class SharesController {
             Object[] apiObjects = {shareSymbol, Application.apiKey};
             ObjectMapper mapper = new ObjectMapper();
 
-            JsonNode searchResults = mapper.readValue(new URL(symbolSearch.format(apiObjects)), JsonNode.class);
-            foundShare = searchResults;
+            foundShare = mapper.readValue(new URL(symbolSearch.format(apiObjects)), JsonNode.class);
         } catch (IOException e) {
             e.printStackTrace();
         }

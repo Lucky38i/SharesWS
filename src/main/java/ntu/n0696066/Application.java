@@ -2,6 +2,7 @@ package ntu.n0696066;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -31,8 +32,9 @@ public class Application {
             Properties prop = new Properties();
             prop.load(in);
 
-            apiKey = prop.getProperty("alphavantage.apikey");
+            apiKey = prop.getProperty("app.apiKey");
         }
+
         if (!apiKey.isEmpty()) SpringApplication.run(Application.class,args);
         else {
             log.error("API Key missing");

@@ -1,4 +1,4 @@
-package ntu.n0696066.dao;
+package ntu.n0696066.repository;
 
 import ntu.n0696066.model.Shares;
 import ntu.n0696066.model.User;
