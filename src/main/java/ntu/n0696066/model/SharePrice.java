@@ -1,5 +1,7 @@
 package ntu.n0696066.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,12 +14,12 @@ public class SharePrice {
     @Column(name = "id")
     private long id;
 
-    @OneToOne(mappedBy = "sharePrice")
-    private Shares share;
-
     private String currency;
     private float value;
     private LocalDate lastUpdate;
+
+    @OneToOne(mappedBy = "sharePrice")
+    private Shares share;
 
     public SharePrice(){};
 
@@ -53,10 +55,12 @@ public class SharePrice {
         this.lastUpdate = lastUpdate;
     }
 
+    @JsonIgnore
     public Shares getShare() {
         return share;
     }
 
+    @JsonIgnore
     public void setShare(Shares share) {
         this.share = share;
     }

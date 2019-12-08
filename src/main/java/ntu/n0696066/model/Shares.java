@@ -1,5 +1,7 @@
 package ntu.n0696066.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 
 @Entity
@@ -10,18 +12,17 @@ public class Shares {
     @Column(name = "id")
     private long id;
 
-    // TODO make this print the user ID. when retrieving JSON
-    @ManyToOne
+    private String companyName;
+    private String companySymbol;
+    private long sharesAmount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "shareprice_id", unique = true, referencedColumnName = "id")
     private SharePrice sharePrice;
-
-    private String companyName;
-    private String companySymbol;
-    private long sharesAmount;
 
     public Shares(){};
 
@@ -57,10 +58,12 @@ public class Shares {
         this.sharesAmount = sharesAmount;
     }
 
+    @JsonIgnore
     public User getUser() {
         return user;
     }
 
+    @JsonIgnore
     public void setUser(User user) {
         this.user = user;
     }

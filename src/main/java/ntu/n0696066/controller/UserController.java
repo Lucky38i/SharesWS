@@ -61,6 +61,7 @@ public class UserController {
         return returnVal;
     }
 
+    /*
     @RequestMapping("/tempuser")
     public User tempUser(@RequestParam String username, @RequestParam String password) {
         User tempUser = new User(username, password);
@@ -89,7 +90,6 @@ public class UserController {
             tempUser.getOwnedShares().add(tempShare);
 
             userRepo.save(tempUser);
-            shareRepo.save(tempShare);
 
 
         } catch (IOException e) {
@@ -97,6 +97,6 @@ public class UserController {
             throw new ResponseStatusException(
                     HttpStatus.REQUEST_TIMEOUT, "Server Unavailable", e);
         }
-        return userRepo.findByUsername(tempUser.getUsername());
-    }
+        return tempUser;
+    }*/
 }

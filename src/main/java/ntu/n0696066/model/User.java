@@ -14,11 +14,12 @@ public class User {
     @Column(name = "id")
     private Long id;
 
-    @OneToMany(mappedBy = "user")
-    private final Set<Shares> ownedShares = new HashSet<>();
-
     private String username;
     private String password;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private final Set<Shares> ownedShares = new HashSet<>();
+
 
     public User() {};
 
