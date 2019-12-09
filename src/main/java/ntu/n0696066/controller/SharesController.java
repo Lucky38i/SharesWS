@@ -3,14 +3,22 @@ package ntu.n0696066.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ntu.n0696066.Application;
+import ntu.n0696066.model.User;
+import ntu.n0696066.payload.ApiResponse;
 import ntu.n0696066.repository.SharesRepository;
 import ntu.n0696066.model.SharePrice;
 import ntu.n0696066.model.Shares;
+import ntu.n0696066.repository.UserRepository;
+import ntu.n0696066.security.CurrentUser;
+import ntu.n0696066.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.validation.Valid;
 import java.io.IOException;
 import java.net.URL;
 import java.text.MessageFormat;
@@ -28,16 +36,22 @@ public class SharesController {
     @Autowired
     SharesRepository shareRepo;
 
-    /**
-     * Purchase shares in a new stock
-     * @param shares the stock to purchase
-     * @return Returns status
-     */
+    @Autowired
+    UserRepository userRepo;
+
     @PostMapping("/purchasestock")
-    @ResponseStatus(HttpStatus.CREATED)
-    public String purchaseShare(@RequestBody Shares shares) {
-        shareRepo.save(shares);
-        return "Success";
+    public ResponseEntity<?> purchaseStock(@CurrentUser UserPrincipal currentUser, @Valid @RequestBody Shares shares) {
+
+        User tempUser = userRepo.findById(currentUser.getId()).orElse(null);
+
+        if (tempUser != null) {
+            tempUser.getOwnedShares().add(shares);
+            userRepo.save(tempUser);
+            return ResponseEntity.ok(new ApiResponse(true, "Stock purchased"));
+        }else {
+            return ResponseEntity.notFound().build();
+        }
+
     }
 
     /**
@@ -46,9 +60,17 @@ public class SharesController {
      * @return Returns status
      */
     @PutMapping("/updateshares")
-    public String updateShares(@RequestBody Shares shareToUpdate){
-        shareRepo.save(shareToUpdate);
-        return "Success";
+    public ResponseEntity<?> updateShares(@CurrentUser UserPrincipal currentUser, @Valid @RequestBody Shares shareToUpdate){
+        User tempUser = userRepo.findById(currentUser.getId()).orElse(null);
+
+        if (tempUser != null) {
+            // Hashset does not keep duplicates so adding just updates the existing share
+            tempUser.getOwnedShares().add(shareToUpdate);
+            userRepo.save(tempUser);
+            return ResponseEntity.ok(new ApiResponse(true, "Stock purchased"));
+        }else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     /**

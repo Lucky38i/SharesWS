@@ -4,7 +4,9 @@ import ntu.n0696066.model.Shares;
 import ntu.n0696066.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 public interface SharesRepository extends JpaRepository<Shares, Long> {
 
-    Shares findByCompanySymbolAndUser(String companySymbol, User user);
+    Optional<Shares> findByCompanySymbolAndUser(String companySymbol, User user);
 }
