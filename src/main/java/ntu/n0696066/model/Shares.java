@@ -14,7 +14,7 @@ public class Shares {
 
     private String companyName;
     private String companySymbol;
-    private long sharesAmount;
+    private long ownedShares;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -26,10 +26,12 @@ public class Shares {
 
     public Shares(){};
 
+    @JsonIgnore
     public long getShares_id() {
         return id;
     }
 
+    @JsonIgnore
     public void setShares_id(long id) {
         this.id = id;
     }
@@ -50,12 +52,12 @@ public class Shares {
         this.companySymbol = companySymbol;
     }
 
-    public long getSharesAmount() {
-        return sharesAmount;
+    public long getOwnedShares() {
+        return ownedShares;
     }
 
-    public void setSharesAmount(long sharesAmount) {
-        this.sharesAmount = sharesAmount;
+    public void setOwnedShares(long sharesAmount) {
+        this.ownedShares = sharesAmount;
     }
 
     @JsonIgnore

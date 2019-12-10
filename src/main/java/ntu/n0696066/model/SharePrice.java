@@ -16,6 +16,7 @@ public class SharePrice {
 
     private String currency;
     private float value;
+    private long currentShares;
     private LocalDate lastUpdate;
 
     @OneToOne(mappedBy = "sharePrice")
@@ -23,10 +24,12 @@ public class SharePrice {
 
     public SharePrice(){};
 
+    @JsonIgnore
     public long getId() {
         return id;
     }
 
+    @JsonIgnore
     public void setID(long id){
         this.id = id;
     }
@@ -63,5 +66,13 @@ public class SharePrice {
     @JsonIgnore
     public void setShare(Shares share) {
         this.share = share;
+    }
+
+    public long getCurrentShares() {
+        return currentShares;
+    }
+
+    public void setCurrentShares(long currentShares) {
+        this.currentShares = currentShares;
     }
 }

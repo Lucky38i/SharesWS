@@ -1,5 +1,7 @@
 package ntu.n0696066.controller;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ntu.n0696066.Application;
@@ -11,15 +13,17 @@ import ntu.n0696066.model.Shares;
 import ntu.n0696066.repository.UserRepository;
 import ntu.n0696066.security.CurrentUser;
 import ntu.n0696066.security.UserPrincipal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.time.LocalDate;
@@ -39,6 +43,15 @@ public class SharesController {
     @Autowired
     UserRepository userRepo;
 
+    Logger logger = LoggerFactory.getLogger(SharesController.class);
+
+    @RequestMapping("/getShares")
+    public ResponseEntity<?> retrieveShares(@CurrentUser UserPrincipal currentUser) {
+        User tempUser = userRepo.findById(currentUser.getId()).orElse(null);
+        if (tempUser != null ) return ResponseEntity.ok(tempUser.getOwnedShares());
+        else return ResponseEntity.notFound().build();
+    }
+
     @PostMapping("/purchasestock")
     public ResponseEntity<?> purchaseStock(@CurrentUser UserPrincipal currentUser, @Valid @RequestBody Shares shares) {
 
@@ -55,12 +68,13 @@ public class SharesController {
     }
 
     /**
-     * Updatess the share object when a client decides to sell or purchase more shares
+     * Updates the share object when a client decides to sell or purchase more shares
      * @param shareToUpdate CurrentShares object containing current shares to be added to current stock
      * @return Returns status
      */
     @PutMapping("/updateshares")
-    public ResponseEntity<?> updateShares(@CurrentUser UserPrincipal currentUser, @Valid @RequestBody Shares shareToUpdate){
+    public ResponseEntity<?> updateShares(@CurrentUser UserPrincipal currentUser,
+                                          @Valid @RequestBody Shares shareToUpdate){
         User tempUser = userRepo.findById(currentUser.getId()).orElse(null);
 
         if (tempUser != null) {
@@ -79,7 +93,7 @@ public class SharesController {
      * @return Returns JSON Object
      */
     @RequestMapping("/liststock")
-    public JsonNode listStock(@RequestParam(value="sharesymbol") String shareSymbol){
+    public ResponseEntity<?> listStock(@RequestParam(value="sharesymbol") String shareSymbol){
         JsonNode foundShare = null;
         try {
             Object[] apiObjects = {shareSymbol, Application.apiKey};
@@ -87,9 +101,11 @@ public class SharesController {
 
             foundShare = mapper.readValue(new URL(symbolSearch.format(apiObjects)), JsonNode.class);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warn("Alphavantage is down");
+            throw new ResponseStatusException(HttpStatus.REQUEST_TIMEOUT, "Alphavantage is down", e);
         }
-        return foundShare;
+        if (foundShare != null) return ResponseEntity.ok(foundShare);
+        else return ResponseEntity.notFound().build();
     }
 
     /**
@@ -98,11 +114,12 @@ public class SharesController {
      * @return Returns new stock item
      */
     @RequestMapping("retrievestock")
-    public Shares retrieveStock(@RequestParam String shareSymbol) {
+    public ResponseEntity<?> retrieveStock(@RequestParam(name = "sharesymbol") String shareSymbol) {
         Shares tempShare = new Shares();
         try {
             Object[] apiObjects = {shareSymbol, Application.apiKey};
             ObjectMapper mapper = new ObjectMapper();
+            String temp = globalQuote.format(apiObjects);
             JsonNode quoteResults = mapper.readValue(new URL(globalQuote.format(apiObjects)),
                     JsonNode.class);
             JsonNode searchResults = mapper.readValue(new URL(symbolSearch.format(apiObjects)),
@@ -113,17 +130,21 @@ public class SharesController {
 
             tempPrice.setCurrency(searchResults.get("bestMatches").get(0).get("8. currency").textValue());
             tempPrice.setValue(Float.parseFloat(quoteResults.get("Global Quote").get("05. price").textValue()));
+            tempPrice.setCurrentShares(Long.parseLong(quoteResults.get("Global Quote").get("06. volume").textValue()));
             tempPrice.setLastUpdate(tempDate);
 
             tempShare.setCompanyName(searchResults.get("bestMatches").get(0).get("2. name").textValue());
             tempShare.setCompanySymbol(shareSymbol);
-            tempShare.setSharesAmount(0);
+            tempShare.setOwnedShares(0);
             tempShare.setSharePrice(tempPrice);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warn("Alphvantage Server down");
             throw new ResponseStatusException(
                     HttpStatus.REQUEST_TIMEOUT, "Server Unavailable", e);
+        } catch (NullPointerException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_ACCEPTABLE, "Malformed Share Symbol", e);
         }
-        return tempShare;
+        return ResponseEntity.ok(tempShare);
     }
 }
