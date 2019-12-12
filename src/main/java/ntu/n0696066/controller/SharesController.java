@@ -45,7 +45,12 @@ public class SharesController {
 
     Logger logger = LoggerFactory.getLogger(SharesController.class);
 
-    @RequestMapping("/getShares")
+    /**
+     * Finds and returns the currently held shares of the currently logged in user
+     * @param currentUser Retrieve the currently logged in user
+     * @return Returns a list of shares owned by the user
+     */
+    @RequestMapping("/getshares")
     public ResponseEntity<?> retrieveShares(@CurrentUser UserPrincipal currentUser) {
         User tempUser = userRepo.findById(currentUser.getId()).orElse(null);
         if (tempUser != null ) return ResponseEntity.ok(tempUser.getOwnedShares());
