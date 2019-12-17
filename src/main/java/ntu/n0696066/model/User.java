@@ -1,5 +1,7 @@
 package ntu.n0696066.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -12,16 +14,18 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id")
+    @JsonIgnore
     private Long id;
 
     private String username;
+    @JsonIgnore
     private String password;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private final Set<Shares> ownedShares = new HashSet<>();
 
 
-    public User() {};
+    public User() {}
 
     public User(String username, String password) {
         this.username = username;
