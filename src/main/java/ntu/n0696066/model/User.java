@@ -21,7 +21,8 @@ public class User {
     @JsonIgnore
     private String password;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany()
+    @JoinColumn(name = "user_id")
     private final Set<Shares> ownedShares = new HashSet<>();
 
 

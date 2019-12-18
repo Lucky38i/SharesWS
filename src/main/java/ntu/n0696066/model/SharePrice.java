@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class SharePrice {
@@ -19,8 +21,9 @@ public class SharePrice {
     private long currentShares;
     private LocalDate lastUpdate;
 
-    @OneToOne(mappedBy = "sharePrice")
-    private Shares share;
+    @OneToMany()
+    @JoinColumn(name = "sharePrice_id")
+    private final List<Shares> userShares = new ArrayList<>();
 
     public SharePrice(){};
 
@@ -58,21 +61,16 @@ public class SharePrice {
         this.lastUpdate = lastUpdate;
     }
 
-    @JsonIgnore
-    public Shares getShare() {
-        return share;
-    }
-
-    @JsonIgnore
-    public void setShare(Shares share) {
-        this.share = share;
-    }
-
     public long getCurrentShares() {
         return currentShares;
     }
 
     public void setCurrentShares(long currentShares) {
         this.currentShares = currentShares;
+    }
+
+    @JsonIgnore
+    public List<Shares> getUserShares() {
+        return userShares;
     }
 }

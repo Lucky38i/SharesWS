@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import ntu.n0696066.Application;
 import ntu.n0696066.model.User;
 import ntu.n0696066.payload.ApiResponse;
+import ntu.n0696066.repository.SharePriceRepository;
 import ntu.n0696066.repository.SharesRepository;
 import ntu.n0696066.model.SharePrice;
 import ntu.n0696066.model.Shares;
@@ -42,6 +43,9 @@ public class SharesController {
 
     @Autowired
     UserRepository userRepo;
+
+    @Autowired
+    SharePriceRepository sharePriceRepo;
 
     Logger logger = LoggerFactory.getLogger(SharesController.class);
 
@@ -124,7 +128,6 @@ public class SharesController {
         try {
             Object[] apiObjects = {shareSymbol, Application.apiKey};
             ObjectMapper mapper = new ObjectMapper();
-            String temp = globalQuote.format(apiObjects);
             JsonNode quoteResults = mapper.readValue(new URL(globalQuote.format(apiObjects)),
                     JsonNode.class);
             JsonNode searchResults = mapper.readValue(new URL(symbolSearch.format(apiObjects)),
@@ -137,6 +140,9 @@ public class SharesController {
             tempPrice.setValue(Float.parseFloat(quoteResults.get("Global Quote").get("05. price").textValue()));
             tempPrice.setCurrentShares(Long.parseLong(quoteResults.get("Global Quote").get("06. volume").textValue()));
             tempPrice.setLastUpdate(tempDate);
+
+            // Add new stock search to DB for future reference
+            sharePriceRepo.save(tempPrice);
 
             tempShare.setCompanyName(searchResults.get("bestMatches").get(0).get("2. name").textValue());
             tempShare.setCompanySymbol(shareSymbol);

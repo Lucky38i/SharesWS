@@ -16,12 +16,12 @@ public class Shares {
     private String companySymbol;
     private long ownedShares;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @ManyToOne()
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
     private User user;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "shareprice_id", unique = true, referencedColumnName = "id")
+    @ManyToOne()
+    @JoinColumn(name = "sharePrice_id", insertable = false, updatable = false)
     private SharePrice sharePrice;
 
     public Shares(){};
