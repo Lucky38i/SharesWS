@@ -1,15 +1,14 @@
 package ntu.n0696066.controller;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import ntu.n0696066.Application;
 import ntu.n0696066.model.User;
 import ntu.n0696066.payload.ApiResponse;
-import ntu.n0696066.repository.SharePriceRepository;
+import ntu.n0696066.repository.StockRepository;
 import ntu.n0696066.repository.SharesRepository;
-import ntu.n0696066.model.SharePrice;
+import ntu.n0696066.model.Stock;
 import ntu.n0696066.model.Shares;
 import ntu.n0696066.repository.UserRepository;
 import ntu.n0696066.security.CurrentUser;
@@ -24,7 +23,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.time.LocalDate;
@@ -45,7 +43,10 @@ public class SharesController {
     UserRepository userRepo;
 
     @Autowired
-    SharePriceRepository sharePriceRepo;
+    StockRepository stockRepo;
+
+    @Autowired
+    ObjectMapper mapper = JsonMapper.builder().build();
 
     Logger logger = LoggerFactory.getLogger(SharesController.class);
 
@@ -106,8 +107,6 @@ public class SharesController {
         JsonNode foundShare = null;
         try {
             Object[] apiObjects = {shareSymbol, Application.apiKey};
-            ObjectMapper mapper = new ObjectMapper();
-
             foundShare = mapper.readValue(new URL(symbolSearch.format(apiObjects)), JsonNode.class);
         } catch (IOException e) {
             logger.warn("Alphavantage is down");
@@ -125,29 +124,46 @@ public class SharesController {
     @RequestMapping("retrievestock")
     public ResponseEntity<?> retrieveStock(@RequestParam(name = "sharesymbol") String shareSymbol) {
         Shares tempShare = new Shares();
+        Stock tempStock = new Stock();
+
         try {
+
             Object[] apiObjects = {shareSymbol, Application.apiKey};
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode quoteResults = mapper.readValue(new URL(globalQuote.format(apiObjects)),
-                    JsonNode.class);
             JsonNode searchResults = mapper.readValue(new URL(symbolSearch.format(apiObjects)),
                     JsonNode.class);
-            SharePrice tempPrice = new SharePrice();
+
+            // If share price exists then retrieve from DB
+            if (stockRepo.findByShareSymbol(shareSymbol).isPresent()) {
+                tempStock = stockRepo.findByShareSymbol(shareSymbol).get();
+            }
+
+            JsonNode quoteResults = mapper.readValue(new URL(globalQuote.format(apiObjects)),
+                    JsonNode.class);
+
+
             LocalDate tempDate = LocalDate.parse(
                     quoteResults.get("Global Quote").get("07. latest trading day").asText());
 
-            tempPrice.setCurrency(searchResults.get("bestMatches").get(0).get("8. currency").textValue());
-            tempPrice.setValue(Float.parseFloat(quoteResults.get("Global Quote").get("05. price").textValue()));
-            tempPrice.setCurrentShares(Long.parseLong(quoteResults.get("Global Quote").get("06. volume").textValue()));
-            tempPrice.setLastUpdate(tempDate);
+            tempStock.setShareSymbol(searchResults.get("bestMatches").get(0).get("2. name").textValue());
+            tempStock.setCurrency(searchResults.get("bestMatches").get(0).get("8. currency").textValue());
+            tempStock.setValue(Float.parseFloat(quoteResults.get("Global Quote").get("05. price").textValue()));
+            tempStock.setCurrentShares(Long.parseLong(quoteResults.get("Global Quote").get("06. volume").textValue()));
+            tempStock.setLastUpdate(tempDate);
 
-            // Add new stock search to DB for future reference
-            sharePriceRepo.save(tempPrice);
+            // Deduct the amount of current shares from held shares by users
+            for (Shares i: tempStock.getUserShares()) {
+                tempStock.setCurrentShares(tempStock.getCurrentShares() - i.getOwnedShares());
+            }
+
+            // Update existing item if it exists otherwise create new
+            stockRepo.save(tempStock);
 
             tempShare.setCompanyName(searchResults.get("bestMatches").get(0).get("2. name").textValue());
             tempShare.setCompanySymbol(shareSymbol);
             tempShare.setOwnedShares(0);
-            tempShare.setSharePrice(tempPrice);
+
+            tempShare.setStock(tempStock);
+
         } catch (IOException e) {
             logger.warn("Alphvantage Server down");
             throw new ResponseStatusException(

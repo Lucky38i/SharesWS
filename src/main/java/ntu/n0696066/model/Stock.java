@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-public class SharePrice {
+public class Stock {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -20,12 +20,13 @@ public class SharePrice {
     private float value;
     private long currentShares;
     private LocalDate lastUpdate;
+    private String shareSymbol;
 
     @OneToMany()
-    @JoinColumn(name = "sharePrice_id")
+    @JoinColumn(name = "stock_id")
     private final List<Shares> userShares = new ArrayList<>();
 
-    public SharePrice(){};
+    public Stock(){};
 
     @JsonIgnore
     public long getId() {
@@ -72,5 +73,13 @@ public class SharePrice {
     @JsonIgnore
     public List<Shares> getUserShares() {
         return userShares;
+    }
+
+    public String getShareSymbol() {
+        return shareSymbol;
+    }
+
+    public void setShareSymbol(String shareSymbol) {
+        this.shareSymbol = shareSymbol;
     }
 }

@@ -21,8 +21,8 @@ public class Shares {
     private User user;
 
     @ManyToOne()
-    @JoinColumn(name = "sharePrice_id", insertable = false, updatable = false)
-    private SharePrice sharePrice;
+    @JoinColumn(name = "stock_id", insertable = false, updatable = false)
+    private Stock stock;
 
     public Shares(){};
 
@@ -70,11 +70,11 @@ public class Shares {
         this.user = user;
     }
 
-    public SharePrice getSharePrice() {
-        return sharePrice;
+    public Stock getStock() {
+        return stock;
     }
 
-    public void setSharePrice(SharePrice sharePrice) {
-        this.sharePrice = sharePrice;
+    public void setStock(Stock stock) {
+        this.stock = stock;
     }
 }
