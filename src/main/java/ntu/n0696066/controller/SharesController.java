@@ -1,5 +1,7 @@
 package ntu.n0696066.controller;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -31,9 +33,9 @@ import java.time.LocalDate;
 @RequestMapping("/api/shares")
 public class SharesController {
 
-    MessageFormat globalQuote = new MessageFormat(
+    private final static MessageFormat globalQuote = new MessageFormat(
             "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={0}&apikey={1}");
-    MessageFormat symbolSearch = new MessageFormat(
+    private final static MessageFormat symbolSearch = new MessageFormat(
             "https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=\"{0}\"&apikey=\"{1}\"");
 
     @Autowired
@@ -49,6 +51,8 @@ public class SharesController {
     ObjectMapper mapper = JsonMapper.builder().build();
 
     Logger logger = LoggerFactory.getLogger(SharesController.class);
+
+
 
     /**
      * Finds and returns the currently held shares of the currently logged in user
@@ -103,7 +107,7 @@ public class SharesController {
      * @return Returns JSON Object
      */
     @RequestMapping("/liststock")
-    public ResponseEntity<?> listStock(@RequestParam(value="sharesymbol") String shareSymbol){
+    public ResponseEntity<?> listStock( @RequestParam(value="sharesymbol") String shareSymbol){
         JsonNode foundShare = null;
         try {
             Object[] apiObjects = {shareSymbol, Application.apiKey};
@@ -122,55 +126,69 @@ public class SharesController {
      * @return Returns new stock item
      */
     @RequestMapping("retrievestock")
-    public ResponseEntity<?> retrieveStock(@RequestParam(name = "sharesymbol") String shareSymbol) {
+    public ResponseEntity<?> retrieveStock(@CurrentUser UserPrincipal currentUser, @RequestParam(name = "sharesymbol") String shareSymbol) {
         Shares tempShare = new Shares();
         Stock tempStock = new Stock();
-
+        User tempUser = userRepo.findById(currentUser.getId()).orElse(null);
         try {
 
             Object[] apiObjects = {shareSymbol, Application.apiKey};
             JsonNode searchResults = mapper.readValue(new URL(symbolSearch.format(apiObjects)),
                     JsonNode.class);
 
-            // If share price exists then retrieve from DB
-            if (stockRepo.findByShareSymbol(shareSymbol).isPresent()) {
-                tempStock = stockRepo.findByShareSymbol(shareSymbol).get();
-            }
 
             JsonNode quoteResults = mapper.readValue(new URL(globalQuote.format(apiObjects)),
                     JsonNode.class);
 
-
-            LocalDate tempDate = LocalDate.parse(
-                    quoteResults.get("Global Quote").get("07. latest trading day").asText());
-
-            tempStock.setShareSymbol(searchResults.get("bestMatches").get(0).get("2. name").textValue());
-            tempStock.setCurrency(searchResults.get("bestMatches").get(0).get("8. currency").textValue());
-            tempStock.setValue(Float.parseFloat(quoteResults.get("Global Quote").get("05. price").textValue()));
-            tempStock.setCurrentShares(Long.parseLong(quoteResults.get("Global Quote").get("06. volume").textValue()));
-            tempStock.setLastUpdate(tempDate);
-
-            // Deduct the amount of current shares from held shares by users
-            for (Shares i: tempStock.getUserShares()) {
-                tempStock.setCurrentShares(tempStock.getCurrentShares() - i.getOwnedShares());
+            //API Limit Reached
+            if (quoteResults.get("Note") != null || searchResults.get("Note") != null){
+                logger.warn(quoteResults.get("Note").textValue());
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "API Limit Reached", null);
             }
+            else if (quoteResults.get("Error Message") != null) {
+                logger.warn(quoteResults.get("Error Message").textValue());
+                throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Malformed Share Symbol", null);
+            }
+            else {
+                LocalDate tempDate = LocalDate.parse(
+                        quoteResults.get("Global Quote").get("07. latest trading day").asText());
 
-            // Update existing item if it exists otherwise create new
-            stockRepo.save(tempStock);
+                // If stock exists then retrieve from DB
+                if (stockRepo.findByShareSymbol(shareSymbol).isPresent()) {
+                    tempStock = stockRepo.findByShareSymbol(shareSymbol).get();
+                }
 
-            tempShare.setCompanyName(searchResults.get("bestMatches").get(0).get("2. name").textValue());
-            tempShare.setCompanySymbol(shareSymbol);
-            tempShare.setOwnedShares(0);
+                tempStock.setShareSymbol(searchResults.get("bestMatches").get(0).get("1. symbol").textValue());
+                tempStock.setCurrency(searchResults.get("bestMatches").get(0).get("8. currency").textValue());
+                tempStock.setValue(Float.parseFloat(quoteResults.get("Global Quote").get("05. price").textValue()));
+                tempStock.setCurrentShares(Long.parseLong(quoteResults.get("Global Quote").get("06. volume").textValue()));
+                tempStock.setLastUpdate(tempDate);
 
-            tempShare.setStock(tempStock);
+                // Deduct the amount of current shares from held shares by users
+                for (Shares i : tempStock.getUserShares()) {
+                    tempStock.setCurrentShares(tempStock.getCurrentShares() - i.getOwnedShares());
+                }
+
+                // Update existing item if it exists otherwise create new
+                stockRepo.save(tempStock);
+
+                // If Share exists then retrieve from DB
+                if (shareRepo.findByCompanySymbolAndUser(shareSymbol, tempUser).isPresent()) {
+                    tempShare = shareRepo.findByCompanySymbolAndUser(shareSymbol, tempUser).get();
+                }
+                else {
+
+                    tempShare.setCompanyName(searchResults.get("bestMatches").get(0).get("2. name").textValue());
+                    tempShare.setCompanySymbol(shareSymbol);
+                    tempShare.setOwnedShares(0);
+                    tempShare.setStock(tempStock);
+                }
+            }
 
         } catch (IOException e) {
             logger.warn("Alphvantage Server down");
             throw new ResponseStatusException(
                     HttpStatus.REQUEST_TIMEOUT, "Server Unavailable", e);
-        } catch (NullPointerException e) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_ACCEPTABLE, "Malformed Share Symbol", e);
         }
         return ResponseEntity.ok(tempShare);
     }
