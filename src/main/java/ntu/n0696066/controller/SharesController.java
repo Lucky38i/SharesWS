@@ -23,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.net.URL;
@@ -66,19 +67,45 @@ public class SharesController {
         else return ResponseEntity.notFound().build();
     }
 
-    @PostMapping("/purchasestock")
+    @Transactional
+    @PostMapping("/purchaseshare")
     public ResponseEntity<?> purchaseStock(@CurrentUser UserPrincipal currentUser, @Valid @RequestBody Shares shares) {
 
         User tempUser = userRepo.findById(currentUser.getId()).orElse(null);
+        Shares tempShare = shares;
+        Stock tempStock = null;
 
-        if (tempUser != null) {
-            tempUser.getOwnedShares().add(shares);
-            userRepo.save(tempUser);
-            return ResponseEntity.ok(new ApiResponse(true, "Stock purchased"));
-        }else {
-            return ResponseEntity.notFound().build();
+        // Retrieve existing stock
+        if (stockRepo.findByShareSymbol(tempShare.getCompanySymbol()).isPresent()) {
+            tempStock = stockRepo.findByShareSymbol(tempShare.getCompanySymbol()).get();
+        }
+        // Retrieve existing share if purchasing more shares
+        if (shareRepo.findByCompanySymbolAndUser(shares.getCompanySymbol(), tempUser).isPresent()) {
+            tempShare = shareRepo.findByCompanySymbolAndUser(shares.getCompanySymbol(), tempUser).get();
+            tempShare.setOwnedShares(tempShare.getOwnedShares() + shares.getOwnedShares());
+            shareRepo.saveAndFlush(tempShare);
+        } else {    // Add new shares to the user and save to DB
+            assert tempStock != null;
+            assert tempUser != null;
+            tempShare.setStock(tempStock);
+            tempShare.setUser(tempUser);
+            shareRepo.saveAndFlush(tempShare);
+            tempUser.getOwnedShares().add(tempShare);
+            userRepo.saveAndFlush(tempUser);
         }
 
+
+
+        // Update shares held in stock
+        assert(tempStock != null);      // This should never be false
+        tempStock.getUserShares().add(tempShare);
+        tempStock.setCurrentShares(tempStock.getCurrentShares() - tempShare.getOwnedShares());
+        stockRepo.saveAndFlush(tempStock);
+
+
+        tempUser = userRepo.findById(currentUser.getId()).orElse(null);
+        assert tempUser != null;
+        return ResponseEntity.ok(tempUser);
     }
 
     /**
