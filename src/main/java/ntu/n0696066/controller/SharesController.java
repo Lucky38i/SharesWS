@@ -1,17 +1,14 @@
 package ntu.n0696066.controller;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import ntu.n0696066.Application;
-import ntu.n0696066.model.User;
-import ntu.n0696066.payload.ApiResponse;
-import ntu.n0696066.repository.StockRepository;
-import ntu.n0696066.repository.SharesRepository;
-import ntu.n0696066.model.Stock;
 import ntu.n0696066.model.Shares;
+import ntu.n0696066.model.Stock;
+import ntu.n0696066.model.User;
+import ntu.n0696066.repository.SharesRepository;
+import ntu.n0696066.repository.StockRepository;
 import ntu.n0696066.repository.UserRepository;
 import ntu.n0696066.security.CurrentUser;
 import ntu.n0696066.security.UserPrincipal;
@@ -53,22 +50,29 @@ public class SharesController {
 
     Logger logger = LoggerFactory.getLogger(SharesController.class);
 
-
-
-    /**
-     * Finds and returns the currently held shares of the currently logged in user
-     * @param currentUser Retrieve the currently logged in user
-     * @return Returns a list of shares owned by the user
-     */
-    @RequestMapping("/getshares")
-    public ResponseEntity<?> retrieveShares(@CurrentUser UserPrincipal currentUser) {
+    @Transactional
+    @PostMapping("/sellshare")
+    public ResponseEntity<?> sellShare(@CurrentUser UserPrincipal currentUser, @Valid @RequestBody Shares shares) {
         User tempUser = userRepo.findById(currentUser.getId()).orElse(null);
-        if (tempUser != null ) return ResponseEntity.ok(tempUser.getOwnedShares());
-        else return ResponseEntity.notFound().build();
+        Shares tempShare;
+
+        if (shareRepo.findByCompanySymbolAndUser(shares.getCompanySymbol(), tempUser).isPresent()) {
+            tempShare = shareRepo.findByCompanySymbolAndUser(shares.getCompanySymbol(), tempUser).get();
+            if (shares.getOwnedShares()== 0) {
+                shareRepo.delete(tempShare);
+            }
+            else {
+                tempShare.setOwnedShares(shares.getOwnedShares());
+                shareRepo.saveAndFlush(tempShare);
+            }
+        }
+        tempUser = userRepo.findById(currentUser.getId()).orElse(null);
+        assert tempUser != null;
+        return ResponseEntity.ok(tempUser);
     }
 
     @Transactional
-    @PostMapping("/purchaseshare")
+    @PostMapping("/buyshare")
     public ResponseEntity<?> purchaseStock(@CurrentUser UserPrincipal currentUser, @Valid @RequestBody Shares shares) {
 
         User tempUser = userRepo.findById(currentUser.getId()).orElse(null);
@@ -86,15 +90,13 @@ public class SharesController {
             shareRepo.saveAndFlush(tempShare);
         } else {    // Add new shares to the user and save to DB
             assert tempStock != null;
-            assert tempUser != null;
             tempShare.setStock(tempStock);
             tempShare.setUser(tempUser);
             shareRepo.saveAndFlush(tempShare);
+            assert tempUser != null;
             tempUser.getOwnedShares().add(tempShare);
             userRepo.saveAndFlush(tempUser);
         }
-
-
 
         // Update shares held in stock
         assert(tempStock != null);      // This should never be false
@@ -108,25 +110,6 @@ public class SharesController {
         return ResponseEntity.ok(tempUser);
     }
 
-    /**
-     * Updates the share object when a client decides to sell or purchase more shares
-     * @param shareToUpdate CurrentShares object containing current shares to be added to current stock
-     * @return Returns status
-     */
-    @PutMapping("/updateshares")
-    public ResponseEntity<?> updateShares(@CurrentUser UserPrincipal currentUser,
-                                          @Valid @RequestBody Shares shareToUpdate){
-        User tempUser = userRepo.findById(currentUser.getId()).orElse(null);
-
-        if (tempUser != null) {
-            // Hashset does not keep duplicates so adding just updates the existing share
-            tempUser.getOwnedShares().add(shareToUpdate);
-            userRepo.save(tempUser);
-            return ResponseEntity.ok(new ApiResponse(true, "Stock purchased"));
-        }else {
-            return ResponseEntity.notFound().build();
-        }
-    }
 
     /**
      * Used as a search function that will return stock details based on share symbol
@@ -135,7 +118,7 @@ public class SharesController {
      */
     @RequestMapping("/liststock")
     public ResponseEntity<?> listStock( @RequestParam(value="sharesymbol") String shareSymbol){
-        JsonNode foundShare = null;
+        JsonNode foundShare;
         try {
             Object[] apiObjects = {shareSymbol, Application.apiKey};
             foundShare = mapper.readValue(new URL(symbolSearch.format(apiObjects)), JsonNode.class);
