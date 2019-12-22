@@ -11,9 +11,9 @@
   </parent>
 
   <groupId>ntu.n0696066</groupId>
-  <artifactId>Shares_WS</artifactId>
+  <artifactId>Shares_REST</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>Shares WS Maven Webapp</name>
+  <name>Shares RESTFul Maven Webapp</name>
   <description>RESTful webservice for Shares Brokerage System</description>
 
   <properties>
