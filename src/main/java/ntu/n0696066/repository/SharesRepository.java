@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface SharesRepository extends JpaRepository<Shares, Long> {
 
     Optional<Shares> findByCompanySymbolAndUser(String companySymbol, User user);
+    Optional<Shares> findByCompanySymbol(String companySymbol);
 }

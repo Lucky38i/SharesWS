@@ -3,6 +3,7 @@ package ntu.n0696066.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
+import javax.xml.bind.annotation.XmlRootElement;
 
 @Entity
 public class Shares {
@@ -24,7 +25,7 @@ public class Shares {
     @JoinColumn(name = "stock_id", insertable = false, updatable = false)
     private Stock stock;
 
-    public Shares(){};
+    public Shares(){}
 
     @JsonIgnore
     public long getShares_id() {

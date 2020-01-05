@@ -3,6 +3,7 @@ package ntu.n0696066.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ public class Stock {
     @JoinColumn(name = "stock_id")
     private final List<Shares> userShares = new ArrayList<>();
 
-    public Stock(){};
+    public Stock(){}
 
     @JsonIgnore
     public long getId() {

@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -135,7 +136,7 @@ public class SharesController {
      * @param shareSymbol The symbol with which to retrieve the stock item
      * @return Returns new stock item
      */
-    @RequestMapping("retrievestock")
+    @RequestMapping(value = "/retrievestock")
     public ResponseEntity<?> retrieveStock(@CurrentUser UserPrincipal currentUser, @RequestParam(name = "sharesymbol") String shareSymbol) {
         Shares tempShare = new Shares();
         Stock tempStock = new Stock();
@@ -150,11 +151,19 @@ public class SharesController {
             JsonNode quoteResults = mapper.readValue(new URL(globalQuote.format(apiObjects)),
                     JsonNode.class);
 
-            //API Limit Reached
+            //API Limit Reached return out-of-date share
             if (quoteResults.get("Note") != null || searchResults.get("Note") != null){
                 logger.warn(quoteResults.get("Note").textValue());
-                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "API Limit Reached", null);
+                logger.info("Responding with out-of-date share");
+                if (shareRepo.findByCompanySymbol(shareSymbol).isPresent()) {
+                    tempShare = shareRepo.findByCompanySymbol(shareSymbol).get();
+                }
+                else {
+                    throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "API Limit Reached", null);
+                }
             }
+
+            //Malformed Share Symbol
             else if (quoteResults.get("Error Message") != null) {
                 logger.warn(quoteResults.get("Error Message").textValue());
                 throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Malformed Share Symbol", null);
@@ -197,8 +206,15 @@ public class SharesController {
 
         } catch (IOException e) {
             logger.warn("Alphvantage Server down");
-            throw new ResponseStatusException(
-                    HttpStatus.REQUEST_TIMEOUT, "Server Unavailable", e);
+            // Return existing share with out of date details
+            if (shareRepo.findByCompanySymbol(shareSymbol).isPresent()) {
+                logger.info("Responding with out-of-date share");
+                return ResponseEntity.ok(shareRepo.findByCompanySymbol(shareSymbol).get());
+            }
+            else {
+                throw new ResponseStatusException(
+                        HttpStatus.REQUEST_TIMEOUT, "Server Unavailable", e);
+            }
         }
         return ResponseEntity.ok(tempShare);
     }
