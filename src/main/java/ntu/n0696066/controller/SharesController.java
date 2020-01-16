@@ -35,7 +35,7 @@ public class SharesController {
     private final static MessageFormat globalQuote = new MessageFormat(
             "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={0}&apikey={1}");
     private final static MessageFormat symbolSearch = new MessageFormat(
-            "https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=\"{0}\"&apikey=\"{1}\"");
+            "https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords={0}&apikey={1}");
 
     @Autowired
     SharesRepository shareRepo;
@@ -168,6 +168,10 @@ public class SharesController {
                 logger.warn(quoteResults.get("Error Message").textValue());
                 throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Malformed Share Symbol", null);
             }
+            else if (searchResults.get("Error Message") != null ) {
+                logger.warn(searchResults.get("Error Message").textValue());
+                throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Malformed Share Symbol", null);
+            }
             else {
                 LocalDate tempDate = LocalDate.parse(
                         quoteResults.get("Global Quote").get("07. latest trading day").asText());
@@ -177,7 +181,7 @@ public class SharesController {
                     tempStock = stockRepo.findByShareSymbol(shareSymbol).get();
                 }
 
-                tempStock.setShareSymbol(searchResults.get("bestMatches").get(0).get("1. symbol").textValue());
+                tempStock.setShareSymbol(quoteResults.get("Global Quote").get("01. symbol").textValue());
                 tempStock.setCurrency(searchResults.get("bestMatches").get(0).get("8. currency").textValue());
                 tempStock.setValue(Float.parseFloat(quoteResults.get("Global Quote").get("05. price").textValue()));
                 tempStock.setCurrentShares(Long.parseLong(quoteResults.get("Global Quote").get("06. volume").textValue()));
@@ -205,7 +209,7 @@ public class SharesController {
             }
 
         } catch (IOException e) {
-            logger.warn("Alphvantage Server down");
+            logger.warn("Unable to connect to Alphavantage API");
             // Return existing share with out of date details
             if (shareRepo.findByCompanySymbol(shareSymbol).isPresent()) {
                 logger.info("Responding with out-of-date share");
